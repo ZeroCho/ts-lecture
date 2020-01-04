@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "lib": ["es2020", "dom"],
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "strict": true
+  }
+}
