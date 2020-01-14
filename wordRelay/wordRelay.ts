@@ -24,8 +24,3 @@ form.addEventListener('submit', (e) => {
     input.focus();
   }
 });
-
-function add(numberOne: number, numberTwo: number) {
-  console.log(numberOne, numberTwo);
-}
-add(3, 5);
