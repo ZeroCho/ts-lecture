@@ -3,11 +3,11 @@ interface Player {
   deck: HTMLDivElement
   field: HTMLDivElement
   cost: HTMLDivElement
-  deckData: Card[]
-  heroData: Card | null;
-  fieldData: Card[]
-  chosenCard: HTMLDivElement | null
-  chosenCardData: Card | null
+  deckData: Sub[]
+  heroData: Hero | null;
+  fieldData: Sub[]
+  chosenCard: HTMLDivElement | null // 선택한 카드 DIV
+  chosenCardData: Card | null // 선택한 카드 data
 }
 
 const opponent: Player = {
@@ -34,22 +34,89 @@ const me: Player = {
   chosenCardData: null,
 };
 
-const turnButton = document.getElementById('turn-btn')!;
-let turn = true; // true면 내턴, false면 니턴
+interface Card {
+  att: number;
+  hp: number;
+  mine: boolean;
+  cost?: number;
+  field?: boolean;
+}
 
-function deckToField(data: Card, turn: boolean) {
-  const target = turn ? me : opponent; // 조건 ? 참 : 거짓;
-  const currentCost = Number(target.cost.textContent);
-  if (currentCost < data.cost) {
-    return 'end';
+class Hero implements Card {
+  public att: number;
+  public hp: number;
+  public mine: boolean;
+  public field: boolean;
+  constructor(mine: boolean) {
+    this.att = Math.ceil(Math.random() * 2);
+    this.hp = Math.ceil(Math.random() * 5) + 25;
+    this.mine = mine;
+    this.field = true;
   }
-  const idx = target.deckData.indexOf(data);
-  target.deckData.splice(idx, 1);
-  target.fieldData.push(data);
-  redrawField(target);
-  redrawDeck(target);
-  data.field = true;
-  target.cost.textContent = currentCost - data.cost;
+}
+
+class Sub implements Card {
+  public att: number;
+  public hp: number;
+  public field: boolean;
+  public cost: number;
+  public mine: boolean;
+  constructor(mine: boolean) {
+    this.att = Math.ceil(Math.random() * 5);
+    this.hp = Math.ceil(Math.random() * 5);
+    this.cost = Math.floor((this.att + this.hp) / 2);
+    this.mine = mine;
+    this.field = false;
+  }
+}
+
+const isSub = function(data: Card): data is Sub {
+  if (data.cost) {
+    return true;
+  }
+  return false;
+}
+
+const turnButton = document.getElementById('turn-btn') as HTMLButtonElement;
+let turn = true; // true면 내턴, false면 상대 턴
+
+function initiate() {
+  [opponent, me].forEach(function (item) {
+    item.deckData = [];
+    item.heroData = null;
+    item.fieldData = [];
+    item.chosenCard = null;
+    item.chosenCardData = null;
+  });
+  createDeck({ mine: false, count: 5 }); // 상대 덱 생성
+  createDeck({ mine: true, count: 5 }); // 내 덱 생성
+  createHero({ mine: false }); // 상대 영웅 그리기
+  createHero({ mine: true }); // 내 영웅 그리기
+  redrawScreen({ mine: false }); // 상대화면
+  redrawScreen({ mine: true }); // 내화면
+}
+
+initiate(); // 진입점
+
+function createDeck({ mine, count }: { mine: boolean; count: number }) {
+  const player = mine ? me : opponent;
+  for (let i = 0; i < count; i++) {
+    player.deckData.push(new Sub(mine));
+  }
+  redrawDeck(player);
+}
+
+function createHero({ mine }: { mine: boolean }) {
+  const player = mine ? me : opponent;
+  player.heroData = new Hero(mine);
+  connectCardDOM(player.heroData, player.hero, true);
+}
+
+function redrawScreen({ mine }: { mine: boolean }) {
+  const player = mine ? me : opponent;
+  redrawField(player);
+  redrawDeck(player);
+  redrawHero(player);
 }
 
 function redrawField(target: Player) {
@@ -73,35 +140,68 @@ function redrawHero(target: Player) {
   connectCardDOM(target.heroData, target.hero, true);
 }
 
-function redrawScreen(turn: boolean) {
-  const target = turn ? me : opponent; // 조건 ? 참 : 거짓;
-  redrawField(target);
-  redrawDeck(target);
-  redrawHero(target);
+function connectCardDOM(data: Card, DOM: HTMLElement, hero?: boolean) {
+  const cardEl = document.querySelector('.card-hidden .card')!.cloneNode(true) as HTMLDivElement;
+  cardEl.querySelector('.card-att')!.textContent = String(data.att);
+  cardEl.querySelector('.card-hp')!.textContent = String(data.hp);
+  if (hero) {
+    (cardEl.querySelector('.card-cost') as HTMLDivElement).style.display = 'none';
+    const name = document.createElement('div');
+    name.textContent = '영웅';
+    cardEl.appendChild(name)
+  } else {
+    cardEl.querySelector('.card-cost')!.textContent = String(data.cost);
+  }
+  cardEl.addEventListener('click', function() {
+    if (isSub(data) && data.mine === turn && !data.field) { // 자신의 덱에 있는 쫄병이면
+      if (!deckToField({ data })) { // 쫄병을 하나 뽑았으면
+        createDeck({ mine: turn, count: 1 });
+      }
+    }
+    turnAction({ cardEl, data });
+  });
+  DOM.appendChild(cardEl);
 }
 
-function turnAction(cardEl: HTMLDivElement, data: Card, turn: boolean) {
-  // 턴이 끝난 카드면 아무일도 일어나지 않음
-  const team = turn ? me : opponent;
-  const enemy = turn ? opponent : me;
-  if (cardEl.classList.contains('card-turnover')) {
+function deckToField({ data }: { data: Sub }): boolean {
+  const target = turn ? me : opponent; // 조건 ? 참 : 거짓;
+  const currentCost = Number(target.cost.textContent);
+  if (currentCost < data.cost) { // 코스트가 모자르면 종료
+    alert('코스트가 모자릅니다.');
+    return true;
+  }
+  data.field = true;
+  const idx = target.deckData.indexOf(data);
+  target.deckData.splice(idx, 1);
+  target.fieldData.push(data);
+  redrawField(target);
+  redrawDeck(target);
+  target.cost.textContent = String(currentCost - data.cost); // 남은 코스트 줄이기
+  return false;
+}
+
+function turnAction({ cardEl, data }: { cardEl: HTMLDivElement, data: Card }) {
+  const team = turn ? me : opponent; // 지금 턴의 편
+  const enemy = turn ? opponent : me; // 그 상대 편
+
+  if (cardEl.classList.contains('card-turnover')) { // 턴이 끝난 카드면 아무일도 일어나지 않음
     return;
   }
-  // 적군 카드면서 아군 카드가 선택되어 있고, 또 그게 턴이 끝난 카드가 아니면 공격
+
   const enemyCard = turn ? !data.mine : data.mine;
-  if (enemyCard && team.chosenCardData) {
+  if (enemyCard && team.chosenCardData) { // 선택한 카드가 있고 적군 카드를 클릭한 경우 공격 수행
     data.hp = data.hp - team.chosenCardData.att;
     if (data.hp <= 0) { // 카드가 죽었을 때
-      const index = enemy.fieldData.indexOf(data);
-      if (index > -1 ) { // 쫄병이 죽었을 때
+      if (isSub(data)) { // 쫄병이 죽었을 때
+        const index = enemy.fieldData.indexOf(data);
         enemy.fieldData.splice(index, 1);
       } else { // 영웅이 죽었을 때
         alert('승리하셨습니다!');
         initiate();
       }
     }
-    redrawScreen(!turn);
-    if (team.chosenCard) {
+    redrawScreen({ mine: !turn }); // 상대 화면 다시 그리기
+    if (team.chosenCard) { // 클릭 해제 후 카드 행동 종료
       team.chosenCard.classList.remove('card-selected');
       team.chosenCard.classList.add('card-turnover');
     }
@@ -117,91 +217,11 @@ function turnAction(cardEl: HTMLDivElement, data: Card, turn: boolean) {
     document.querySelectorAll('.card').forEach(function (card) {
       card.classList.remove('card-selected');
     });
+    console.log(cardEl);
     cardEl.classList.add('card-selected');
     team.chosenCard = cardEl;
     team.chosenCardData = data;
-  } else { // 덱이 있으면
-    if (deckToField(data, turn) !== 'end') {
-      turn ? createMyDeck(1) : createEnemyDeck(1);
-    }
   }
-}
-
-function connectCardDOM(data: Card, DOM: HTMLElement, hero?: boolean) {
-  const cardEl = document.querySelector('.card-hidden .card')!.cloneNode(true) as HTMLDivElement;
-  cardEl.querySelector('.card-cost')!.textContent = String(data.cost);
-  cardEl.querySelector('.card-att')!.textContent = String(data.att);
-  cardEl.querySelector('.card-hp')!.textContent = String(data.hp);
-  if (hero) {
-    (cardEl.querySelector('.card-cost') as HTMLDivElement).style.display = 'none';
-    const name = document.createElement('div');
-    name.textContent = '영웅';
-    cardEl.appendChild(name)
-  }
-  cardEl.addEventListener('click', function() {
-    turnAction(cardEl, data, turn);
-  });
-  DOM.appendChild(cardEl);
-}
-function createEnemyDeck(count: number) {
-  for (let i = 0; i < count; i++) {
-    opponent.deckData.push(new Card());
-  }
-  redrawDeck(opponent);
-}
-function createMyDeck(count: number) {
-  for (let i = 0; i < count; i++) {
-    me.deckData.push(new Card(false, true));
-  }
-  redrawDeck(me);
-}
-function createMyHero() {
-  me.heroData = new Card(true, true);
-  connectCardDOM(me.heroData, me.hero, true);
-}
-function createEnemyHero() {
-  opponent.heroData = new Card(true);
-  connectCardDOM(opponent.heroData, opponent.hero, true);
-}
-
-class Card {
-  private hero?: boolean;
-  public att: number;
-  public hp: number;
-  public field?: boolean;
-  public cost?: number;
-  public mine?: boolean;
-  constructor(hero?: boolean, mine?: boolean) {
-    if (hero) {
-      this.att = Math.ceil(Math.random() * 2);
-      this.hp = Math.ceil(Math.random() * 5) + 25;
-      this.hero = true;
-      this.field = true;
-    } else {
-      this.att = Math.ceil(Math.random() * 5);
-      this.hp = Math.ceil(Math.random() * 5);
-      this.cost = Math.floor((this.att + this.hp) / 2);
-    }
-    if (mine) {
-      this.mine = true;
-    }
-  }
-}
-
-function initiate() {
-  [opponent, me].forEach(function (item) {
-    item.deckData = [];
-    item.heroData = null;
-    item.fieldData = [];
-    item.chosenCard = null;
-    item.chosenCardData = null;
-  });
-  createEnemyDeck(5);
-  createMyDeck(5);
-  createMyHero();
-  createEnemyHero();
-  redrawScreen(true); // 상대화면
-  redrawScreen(false); // 내화면
 }
 
 turnButton.addEventListener('click', function() {
@@ -218,4 +238,3 @@ turnButton.addEventListener('click', function() {
   }
 });
 
-initiate(); // 진입점
