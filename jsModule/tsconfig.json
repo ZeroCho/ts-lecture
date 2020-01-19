@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "strict": true,
+    "declaration": true,
+    "typeRoots": ["./types"],
+    "declarationDir": "./types"
+  }
+}

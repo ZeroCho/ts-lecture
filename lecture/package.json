@@ -9,6 +9,15 @@
   "author": "ZeroCho",
   "license": "MIT",
   "dependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/express": "^4.17.2",
+    "@types/jquery": "^3.3.31",
+    "@types/redux": "^3.6.0",
+    "can-use-dom": "^0.1.0",
+    "connect-flash": "^0.1.1",
+    "express": "^4.17.1",
+    "jquery": "^3.4.1",
+    "redux": "^4.0.5",
     "typescript": "^3.7.4"
   }
 }
