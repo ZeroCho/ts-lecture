@@ -1,156 +1,82 @@
 "use strict";
-exports.__esModule = true;
-var opponent = {
-    hero: document.getElementById('rival-hero'),
-    deck: document.getElementById('rival-deck'),
-    field: document.getElementById('rival-cards'),
-    cost: document.getElementById('rival-cost'),
-    deckData: [],
-    heroData: null,
-    fieldData: [],
-    chosenCard: null,
-    chosenCardData: null
-};
-var me = {
-    hero: document.getElementById('my-hero'),
-    deck: document.getElementById('my-deck'),
-    field: document.getElementById('my-cards'),
-    cost: document.getElementById('my-cost'),
-    deckData: [],
-    heroData: null,
-    fieldData: [],
-    chosenCard: null,
-    chosenCardData: null
-};
-var Hero = /** @class */ (function () {
-    function Hero(mine) {
-        this.mine = mine;
-        this.att = Math.ceil(Math.random() * 2);
-        this.hp = Math.ceil(Math.random() * 5) + 25;
-        this.hero = true;
-        this.field = true;
+const horizontal = 4;
+const vertical = 3;
+const colors = ['red', 'red', 'orange', 'orange', 'green', 'green', 'yellow', 'yellow', 'white', 'white', 'pink', 'pink'];
+let colorCandidate = colors.slice();
+let color = [];
+let clickFlag = true;
+let clickCard = [];
+let completedCard = [];
+let startTime = null;
+function shuffle() {
+    for (let i = 0; colorCandidate.length > 0; i += 1) {
+        color = color.concat(colorCandidate.splice(Math.floor(Math.random() * colorCandidate.length), 1));
     }
-    return Hero;
-}());
-var Sub = /** @class */ (function () {
-    function Sub(mine) {
-        this.field = false;
-        this.mine = mine;
-        this.att = Math.ceil(Math.random() * 5);
-        this.hp = Math.ceil(Math.random() * 5);
-        this.cost = Math.floor((this.att + this.hp) / 2);
-    }
-    return Sub;
-}());
-function isSub(data) {
-    if (data.cost) {
-        return true;
-    }
-    return false;
 }
-function isHero(data) {
-    if (data.hero) {
-        return true;
-    }
-    return false;
-}
-var turnButton = document.getElementById('turn-btn');
-var turn = true; // true면 내 턴, false면 상대 턴
-function initiate() {
-    [opponent, me].forEach(function (item) {
-        item.deckData = [];
-        item.heroData = null;
-        item.fieldData = [];
-        item.chosenCard = null;
-        item.chosenCardData = null;
-    });
-    createDeck({ mine: true, count: 5 });
-    createDeck({ mine: false, count: 5 });
-    createHero({ mine: false });
-    createHero({ mine: true });
-    redrawScreen({ mine: true });
-    redrawScreen({ mine: false });
-}
-initiate();
-function createDeck(_a) {
-    var mine = _a.mine, count = _a.count;
-    var player = mine ? me : opponent;
-    for (var i = 0; i < count; i++) {
-        player.deckData.push(new Sub(mine));
-    }
-    ;
-    redrawDeck(player);
-}
-function createHero(_a) {
-    var mine = _a.mine;
-    var player = mine ? me : opponent;
-    player.heroData = new Hero(mine);
-    connectCardDOM({ data: player.heroData, DOM: player.hero, hero: true });
-}
-function connectCardDOM(_a) {
-    var data = _a.data, DOM = _a.DOM, _b = _a.hero, hero = _b === void 0 ? false : _b;
-    var cardEl = document.querySelector('.card-hidden .card').cloneNode(true);
-    cardEl.querySelector('.card-att').textContent = String(data.att);
-    cardEl.querySelector('.card-hp').textContent = String(data.hp);
-    if (hero) {
-        cardEl.querySelector('.card-cost').style.display = 'none';
-        var name_1 = document.createElement('div');
-        name_1.textContent = '영웅';
-        cardEl.appendChild(name_1);
-    }
-    else {
-        cardEl.querySelector('.card-cost').textContent = String(data.cost);
-    }
-    cardEl.addEventListener('click', function () {
-        if (isSub(data) && data.mine === turn && !data.field) { // 쫄병이면
-            if (!deckToField({ data: data })) { // 쫄병 하나 덱에서 뽑았으면,
-                createDeck({ mine: turn, count: 1 }); // 덱에 새로운 쫄병 하나 추가
+function setCard(horizontal, vertical) {
+    clickFlag = false;
+    for (let i = 0; i < horizontal * vertical; i++) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const cardInner = document.createElement('div');
+        cardInner.className = 'card-inner';
+        const cardFront = document.createElement('div');
+        cardFront.className = 'card-front';
+        const cardBack = document.createElement('div');
+        cardBack.className = 'card-back';
+        cardBack.style.backgroundColor = color[i];
+        cardInner.appendChild(cardFront);
+        cardInner.appendChild(cardBack);
+        card.appendChild(cardInner);
+        card.addEventListener('click', function () {
+            if (clickFlag && !completedCard.includes(this)) {
+                this.classList.toggle('flipped');
+                clickCard.push(this);
+                if (clickCard.length === 2) {
+                    const firstBackground = clickCard[0].querySelector('.card-back').style.backgroundColor;
+                    const secondBackground = clickCard[1].querySelector('.card-back').style.backgroundColor;
+                    if (firstBackground === secondBackground) {
+                        completedCard.push(clickCard[0]);
+                        completedCard.push(clickCard[1]);
+                        clickCard = [];
+                        if (completedCard.length === horizontal * vertical) {
+                            const endTime = new Date().getTime();
+                            alert(`축하합니다! ${(endTime - startTime.getTime()) / 1000}초 걸렸습니다!`);
+                            document.querySelector('#wrapper').innerHTML = '';
+                            colorCandidate = colors.slice();
+                            color = [];
+                            completedCard = [];
+                            startTime = null;
+                            shuffle();
+                            setCard(horizontal, vertical);
+                        }
+                    }
+                    else {
+                        clickFlag = false;
+                        setTimeout(() => {
+                            clickCard[0].classList.remove('flipped');
+                            clickCard[1].classList.remove('flipped');
+                            clickFlag = true;
+                            clickCard = [];
+                        }, 1000);
+                    }
+                }
             }
-        }
-        if (isHero(data)) {
-            console.log(data);
-        }
-    });
-    DOM.appendChild(cardEl);
-}
-function redrawScreen(_a) {
-    var mine = _a.mine;
-    var player = mine ? me : opponent;
-    redrawHero(player);
-}
-function redrawHero(target) {
-    if (!target.heroData) {
-        throw new Error('heroData가 없습니다.');
+        });
+        document.querySelector('#wrapper').appendChild(card);
     }
-    target.hero.innerHTML = '';
-    connectCardDOM({ data: target.heroData, DOM: target.hero, hero: true });
-}
-function redrawDeck(target) {
-    target.deck.innerHTML = '';
-    target.deckData.forEach(function (data) {
-        connectCardDOM({ data: data, DOM: target.deck });
+    Array.prototype.forEach.call(document.getElementsByClassName('card'), (card, index) => {
+        setTimeout(() => {
+            card.classList.add('flipped');
+        }, 1000 + 100 * index);
     });
+    setTimeout(() => {
+        Array.prototype.forEach.call(document.getElementsByClassName('card'), (card, index) => {
+            card.classList.remove('flipped');
+        });
+        clickFlag = true;
+        startTime = new Date();
+    }, 5000);
 }
-function redrawField(target) {
-    target.field.innerHTML = '';
-    target.fieldData.forEach(function (data) {
-        connectCardDOM({ data: data, DOM: target.field });
-    });
-}
-function deckToField(_a) {
-    var data = _a.data;
-    var target = turn ? me : opponent;
-    var currentCost = Number(target.cost.textContent);
-    if (currentCost < data.cost) {
-        alert('코스트가 모자릅니다.');
-        return true;
-    }
-    data.field = true;
-    var idx = target.deckData.indexOf(data);
-    target.deckData.splice(idx, 1);
-    target.fieldData.push(data);
-    redrawDeck(target);
-    redrawField(target);
-    target.cost.textContent = String(currentCost - data.cost); // 남은 코스트 줄이기
-    return false;
-}
+shuffle();
+setCard(horizontal, vertical);
