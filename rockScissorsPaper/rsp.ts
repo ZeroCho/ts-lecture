@@ -47,7 +47,7 @@ document.querySelectorAll('.btn').forEach((btn) => {
    setTimeout(() => {
      intervalMaker();
    }, 1000);
-   const myChoice = this.textContent as keyof RSP;
+   const myChoice = this.id as keyof RSP;
    const myScore = score[myChoice];
    const computerScore = score[computerChoice(imgCoords)!];
    const diff = myScore - computerScore;
