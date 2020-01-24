@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
     "strict": true,
-    "lib": ["ES5", "ES2015", "DOM"]
+    "lib": ["ES5", "ES2015", "ES2016", "DOM"]
   }
 }
