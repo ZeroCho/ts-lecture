@@ -61,7 +61,7 @@ function callback(event: MouseEvent) {
                     cell.textContent = '';
                 });
             })
-            count=0;
+            count=0;//카운트초기화
         } else {
             turn = turn === 'O' ? 'X' : 'O';
         }
