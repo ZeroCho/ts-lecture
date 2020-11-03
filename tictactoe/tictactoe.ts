@@ -52,6 +52,7 @@ function callback(event: MouseEvent) {
                     cell.textContent = '';
                 });
             })
+            count = 0;
         } else if (count === 9) {
             result.textContent = `무승부!`;
             turn = 'X';
@@ -60,6 +61,7 @@ function callback(event: MouseEvent) {
                     cell.textContent = '';
                 });
             })
+            count = 0;
         } else {
             turn = turn === 'O' ? 'X' : 'O';
         }
