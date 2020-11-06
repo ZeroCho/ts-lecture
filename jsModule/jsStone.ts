@@ -1,3 +1,22 @@
+interface Player {
+  hero: HTMLDivElement,
+  deck: HTMLDivElement,
+  field: HTMLDivElement,
+  cost: HTMLDivElement,
+  deckData: Card[],
+  heroData: Hero | null,
+  fieldData: Card[],
+  chosenCard: HTMLDivElement | null,
+  chosenCardData: Card | null,
+}
+interface Card {
+  att: number;
+  hp: number;
+  mine: boolean;
+  field: boolean;
+  cost?: number
+}
+
 const opponent: Player = {
   hero: document.getElementById('rival-hero') as HTMLDivElement,
   deck: document.getElementById('rival-deck') as HTMLDivElement,

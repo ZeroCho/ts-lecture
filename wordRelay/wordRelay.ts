@@ -13,14 +13,16 @@ document.body.append(resultDiv);
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (word.textContent[word.textContent.length - 1] === input.value[0]) { // input.value === 초밥
-    resultDiv.textContent = '딩동댕';
-    word.textContent = input.value;
-    input.value = '';
-    input.focus();
-  } else {
-    resultDiv.textContent = '땡';
-    input.value = '';
-    input.focus();
+  if (word.textContent) {
+    if (word.textContent[word.textContent.length - 1] === input.value[0]) { // input.value === 초밥
+      resultDiv.textContent = '딩동댕';
+      word.textContent = input.value;
+      input.value = '';
+      input.focus();
+    } else {
+      resultDiv.textContent = '땡';
+      input.value = '';
+      input.focus();
+    }
   }
 });
